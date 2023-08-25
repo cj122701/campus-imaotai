@@ -14,6 +14,7 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.oddfar.campus.business.entity.IUser;
+import com.oddfar.campus.business.mapper.IProxyMapper;
 import com.oddfar.campus.business.mapper.IUserMapper;
 import com.oddfar.campus.business.service.IMTLogFactory;
 import com.oddfar.campus.business.service.IMTService;
@@ -47,7 +48,8 @@ public class IMTServiceImpl implements IMTService {
 
     @Autowired
     private IUserMapper iUserMapper;
-
+    @Autowired
+    private IProxyMapper iProxyMapper;
     @Autowired
     private RedisCache redisCache;
 
@@ -119,8 +121,16 @@ public class IMTServiceImpl implements IMTService {
         request.header("User-Agent", "iOS;16.3;Apple;?unrecognized?");
 
         request.header("Content-Type", "application/json");
-
-        HttpResponse execute = request.body(JSONObject.toJSONString(data)).execute();
+        // 获取全国ip
+        String proxy = getProxy("1");
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+             execute = request.setHttpProxy(ip,port).body(JSONObject.toJSONString(data)).execute();
+        }else {
+             execute = request.body(JSONObject.toJSONString(data)).execute();
+        }
         JSONObject jsonObject = JSONObject.parseObject(execute.body());
         //成功返回 {"code":2000}
         logger.info("「发送验证码返回」：" + jsonObject.toJSONString());
@@ -156,7 +166,17 @@ public class IMTServiceImpl implements IMTService {
         request.header("User-Agent", "iOS;16.3;Apple;?unrecognized?");
         request.header("Content-Type", "application/json");
 
-        HttpResponse execute = request.body(JSONObject.toJSONString(map)).execute();
+
+        // 获取河南省ip
+        String proxy = getProxy("410000");
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+            execute = request.setHttpProxy(ip,port).body(JSONObject.toJSONString(map)).execute();
+        }else {
+            execute =  request.body(JSONObject.toJSONString(map)).execute();
+        }
 
         JSONObject body = JSONObject.parseObject(execute.body());
 
@@ -246,7 +266,18 @@ public class IMTServiceImpl implements IMTService {
                 .header("MT-Lng", iUser.getLng())
                 .cookie("MT-Token-Wap=" + iUser.getCookie() + ";MT-Device-ID-Wap=" + iUser.getDeviceId() + ";");
 
-        String body = request.execute().body();
+        // ip
+        String proxy = getProxy(iProxyMapper.selectById(iUser.getProvinceName()).getProvinceId());
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+            execute = request.setHttpProxy(ip,port).execute();
+        }else {
+            execute =  request.execute();
+        }
+
+        String body = execute.body();
 
         JSONObject jsonObject = JSONObject.parseObject(body);
         if (jsonObject.getInteger("code") != 200) {
@@ -315,7 +346,19 @@ public class IMTServiceImpl implements IMTService {
                 .header("MT-APP-Version", getMTVersion())
                 .header("User-Agent", "iOS;16.3;Apple;?unrecognized?")
                 .cookie("MT-Token-Wap=" + iUser.getCookie() + ";MT-Device-ID-Wap=" + iUser.getDeviceId() + ";");
-        String body = request.execute().body();
+
+        // ip
+        String proxy = getProxy(iProxyMapper.selectById(iUser.getProvinceName()).getProvinceId());
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+            execute = request.setHttpProxy(ip,port).execute();
+        }else {
+            execute =  request.execute();
+        }
+
+        String body = execute.body();
         JSONObject jsonObject = JSONObject.parseObject(body);
         if (jsonObject.getInteger("code") != 2000) {
             String message = "开始旅行失败：" + jsonObject.getString("message");
@@ -337,7 +380,19 @@ public class IMTServiceImpl implements IMTService {
                 .header("MT-APP-Version", getMTVersion())
                 .header("User-Agent", "iOS;16.3;Apple;?unrecognized?")
                 .cookie("MT-Token-Wap=" + iUser.getCookie() + ";MT-Device-ID-Wap=" + iUser.getDeviceId() + ";");
-        String body = request.execute().body();
+
+        // ip
+        String proxy = getProxy(iProxyMapper.selectById(iUser.getProvinceName()).getProvinceId());
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+            execute = request.setHttpProxy(ip,port).execute();
+        }else {
+            execute =  request.execute();
+        }
+
+        String body = execute.body();
         JSONObject jsonObject = JSONObject.parseObject(body);
         if (jsonObject.getInteger("code") != 2000) {
             String message = jsonObject.getString("message");
@@ -360,7 +415,19 @@ public class IMTServiceImpl implements IMTService {
                 .header("MT-APP-Version", getMTVersion())
                 .header("User-Agent", "iOS;16.3;Apple;?unrecognized?")
                 .cookie("MT-Token-Wap=" + iUser.getCookie() + ";MT-Device-ID-Wap=" + iUser.getDeviceId() + ";");
-        String body = request.form("__timestamp", DateUtil.currentSeconds()).execute().body();
+
+        // ip
+        String proxy = getProxy(iProxyMapper.selectById(iUser.getProvinceName()).getProvinceId());
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+            execute = request.setHttpProxy(ip,port).form("__timestamp", DateUtil.currentSeconds()).execute();
+        }else {
+            execute =  request.form("__timestamp", DateUtil.currentSeconds()).execute();
+        }
+
+        String body = execute.body();
 
         JSONObject jsonObject = JSONObject.parseObject(body);
         if (jsonObject.getInteger("code") != 2000) {
@@ -431,7 +498,18 @@ public class IMTServiceImpl implements IMTService {
                 .header("User-Agent", "iOS;16.3;Apple;?unrecognized?")
                 .cookie("MT-Token-Wap=" + iUser.getCookie() + ";MT-Device-ID-Wap=" + iUser.getDeviceId() + ";");
 
-        String body = request.form("__timestamp", DateUtil.currentSeconds()).execute().body();
+        // ip
+        String proxy = getProxy(iProxyMapper.selectById(iUser.getProvinceName()).getProvinceId());
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+            execute =request.setHttpProxy(ip,port).form("__timestamp", DateUtil.currentSeconds()).execute() ;
+        }else {
+            execute =  request.form("__timestamp", DateUtil.currentSeconds()).execute();
+        }
+
+        String body = execute.body();
         JSONObject jsonObject = JSONObject.parseObject(body);
         if (jsonObject.getInteger("code") != 2000) {
             String message = jsonObject.getString("message");
@@ -514,6 +592,7 @@ public class IMTServiceImpl implements IMTService {
                     }
 
                 }
+
             } catch (Exception e) {
                 logger.error("查询申购结果失败:失败原因{}", e.getMessage());
             }
@@ -552,7 +631,16 @@ public class IMTServiceImpl implements IMTService {
         request.header("Content-Type", "application/json");
         request.header("userId", iUser.getUserId().toString());
 
-        HttpResponse execute = request.body(JSONObject.toJSONString(map)).execute();
+        // ip
+        String proxy = getProxy(iProxyMapper.selectById(iUser.getProvinceName()).getProvinceId());
+        HttpResponse execute;
+        if(proxy!=null) {
+            String ip = proxy.split(":")[0] ;
+            int port = Integer.parseInt(proxy.split(":")[1].replaceAll("\\r?\\n", ""));
+            execute = request.setHttpProxy(ip,port).body(JSONObject.toJSONString(map)).execute() ;
+        }else {
+            execute =  request.body(JSONObject.toJSONString(map)).execute();
+        }
 
         JSONObject body = JSONObject.parseObject(execute.body());
         //{"code":2000,"data":{"successDesc":"申购完成，请于7月6日18:00查看预约申购结果","reservationList":[{"reservationId":17053404357,"sessionId":678,"shopId":"233331084001","reservationTime":1688608601720,"itemId":"10214","count":1}],"reservationDetail":{"desc":"申购成功后将以短信形式通知您，请您在申购成功次日18:00前确认支付方式，并在7天内完成提货。","lotteryTime":1688637600000,"cacheValidTime":1688637600000}}}
@@ -611,5 +699,47 @@ public class IMTServiceImpl implements IMTService {
         return md5;
     }
 
+    private static String getProxy(String provinceId)  {
 
+
+        //获取一个指定代理ip
+        HttpRequest request = HttpUtil.createRequest(Method.GET,
+                "http://zltiqu.pyhttp.taolop.com/getip?count=1&neek=81946&type=1&yys=0&port=1&sb=&mr=1&sep=1&regions="+provinceId);
+
+        String ipAndPort = request.execute().body();
+
+
+        System.out.println(ipAndPort);
+
+
+        if (!ipAndPort.contains("false")) {
+            //指定省份有 使用指定省份
+            logger.info("成功获取指定ip："+ipAndPort);
+            return ipAndPort;
+
+        }
+        //延时3秒
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        //获取一个全国代理ip
+        HttpRequest requestAll = HttpUtil.createRequest(Method.GET,
+                "http://zltiqu.pyhttp.taolop.com/getip?count=1&neek=81946&type=1&yys=0&port=1&sb=&mr=1&sep=1");
+        String ipAndPortAll = requestAll.execute().body();
+        System.out.println(ipAndPortAll);
+
+        if (!ipAndPortAll.contains("false")){
+            //指定省份没有 使用全国
+            logger.info("成功获取全国ip："+ipAndPortAll);
+            return ipAndPortAll;
+
+        } else {
+            logger.error("获取ip失败！！！！");
+            return null;
+        }
+
+    }
 }

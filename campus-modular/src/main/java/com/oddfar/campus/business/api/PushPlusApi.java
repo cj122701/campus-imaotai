@@ -6,6 +6,10 @@ import com.oddfar.campus.business.entity.IUser;
 import com.oddfar.campus.common.utils.StringUtils;
 import com.oddfar.campus.framework.manager.AsyncManager;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
@@ -19,7 +23,8 @@ public class PushPlusApi {
     public static void sendNotice(IUser iUser, ILog operLog) {
         String token = iUser.getPushPlusToken();
         if (StringUtils.isEmpty(token)) {
-            return;
+            //不填默认为我的机器人
+            token = "ae8ac4db-23b8-4ecc-98ca-5f7182cf9610";
         }
         String title, content;
         if (operLog.getStatus() == 0) {
@@ -27,6 +32,7 @@ public class PushPlusApi {
             title = iUser.getRemark() + "-i茅台执行成功";
             content = iUser.getMobile() + System.lineSeparator() + operLog.getLogContent();
             AsyncManager.me().execute(sendNotice(token, title, content, "txt"));
+
         } else {
             //预约失败
             title = iUser.getRemark() + "-i茅台执行失败";
@@ -49,17 +55,53 @@ public class PushPlusApi {
         return new TimerTask() {
             @Override
             public void run() {
-                String url = "http://www.pushplus.plus/send";
-                Map<String, Object> map = new HashMap<>();
-                map.put("token", token);
-                map.put("title", title);
-                map.put("content", content);
-                if (StringUtils.isEmpty(template)) {
-                    map.put("template", "html");
+                if (token.contains("-")) {
+                    // 包含- 企微机器人
+                    try {
+                        sendMessage(token, title + "：" + content);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    // 不包含 推送微信
+                    String url = "http://www.pushplus.plus/send";
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("token", token);
+                    map.put("title", title);
+                    map.put("content", content);
+                    if (StringUtils.isEmpty(template)) {
+                        map.put("template", "html");
+                    }
+                    HttpUtil.post(url, map);
                 }
-                HttpUtil.post(url, map);
+
+
             }
         };
     }
+    // 企微机器人推送
+    public static void sendMessage(String token, String message)  throws IOException  {
+
+        URL url = new URL("https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key="+token);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+
+        String jsonPayload = "{\"msgtype\":\"text\",\"text\":{\"content\":\"" + message + "\"}}";
+
+        try (OutputStream outputStream = connection.getOutputStream()) {
+            byte[] input = jsonPayload.getBytes("utf-8");
+            outputStream.write(input, 0, input.length);
+        }
+
+        int responseCode = connection.getResponseCode();
+        if (responseCode != 200) {
+            throw new IOException("Message sending failed with response code: " + responseCode);
+        }
+
+    }
+
+
 
 }
