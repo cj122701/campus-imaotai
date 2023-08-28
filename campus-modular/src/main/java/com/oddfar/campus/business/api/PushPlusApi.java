@@ -23,8 +23,9 @@ public class PushPlusApi {
     public static void sendNotice(IUser iUser, ILog operLog) {
         String token = iUser.getPushPlusToken();
         if (StringUtils.isEmpty(token)) {
-            //不填默认为我的机器人 改成自己的
-            token = "ae8ac4db-23b8-4ecc-98ca-5f7182cf9610";
+            //不填默认为我的机器人 改成自己的 把return注释掉可以实现默认通知至企微
+//            token = "";
+            return;
         }
         String title, content;
         if (operLog.getStatus() == 0) {
